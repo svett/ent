@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/phogolabs/ent/integration/ent/article"
-	"github.com/xtgo/uuid"
+	"github.com/phogolabs/ent/integration/ent/product"
+	"github.com/google/uuid"
 
 	"github.com/facebookincubator/ent"
 )
@@ -21,37 +21,37 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeArticle = "Article"
+	TypeProduct = "Product"
 )
 
-// ArticleMutation represents an operation that mutate the Articles
+// ProductMutation represents an operation that mutate the Products
 // nodes in the graph.
-type ArticleMutation struct {
+type ProductMutation struct {
 	config
 	op            Op
 	typ           string
 	id            *uuid.UUID
-	name          *string
+	title         *string
 	created_at    *time.Time
 	updated_at    *time.Time
 	clearedFields map[string]struct{}
 }
 
-var _ ent.Mutation = (*ArticleMutation)(nil)
+var _ ent.Mutation = (*ProductMutation)(nil)
 
-// newArticleMutation creates new mutation for $n.Name.
-func newArticleMutation(c config, op Op) *ArticleMutation {
-	return &ArticleMutation{
+// newProductMutation creates new mutation for $n.Name.
+func newProductMutation(c config, op Op) *ProductMutation {
+	return &ProductMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeArticle,
+		typ:           TypeProduct,
 		clearedFields: make(map[string]struct{}),
 	}
 }
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m ArticleMutation) Client() *Client {
+func (m ProductMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -59,7 +59,7 @@ func (m ArticleMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m ArticleMutation) Tx() (*Tx, error) {
+func (m ProductMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
 	}
@@ -69,46 +69,46 @@ func (m ArticleMutation) Tx() (*Tx, error) {
 }
 
 // SetID sets the value of the id field. Note that, this
-// operation is accepted only on Article creation.
-func (m *ArticleMutation) SetID(id uuid.UUID) {
+// operation is accepted only on Product creation.
+func (m *ProductMutation) SetID(id uuid.UUID) {
 	m.id = &id
 }
 
 // ID returns the id value in the mutation. Note that, the id
 // is available only if it was provided to the builder.
-func (m *ArticleMutation) ID() (id uuid.UUID, exists bool) {
+func (m *ProductMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
 	return *m.id, true
 }
 
-// SetName sets the name field.
-func (m *ArticleMutation) SetName(s string) {
-	m.name = &s
+// SetTitle sets the title field.
+func (m *ProductMutation) SetTitle(s string) {
+	m.title = &s
 }
 
-// Name returns the name value in the mutation.
-func (m *ArticleMutation) Name() (r string, exists bool) {
-	v := m.name
+// Title returns the title value in the mutation.
+func (m *ProductMutation) Title() (r string, exists bool) {
+	v := m.title
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetName reset all changes of the name field.
-func (m *ArticleMutation) ResetName() {
-	m.name = nil
+// ResetTitle reset all changes of the title field.
+func (m *ProductMutation) ResetTitle() {
+	m.title = nil
 }
 
 // SetCreatedAt sets the created_at field.
-func (m *ArticleMutation) SetCreatedAt(t time.Time) {
+func (m *ProductMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
 }
 
 // CreatedAt returns the created_at value in the mutation.
-func (m *ArticleMutation) CreatedAt() (r time.Time, exists bool) {
+func (m *ProductMutation) CreatedAt() (r time.Time, exists bool) {
 	v := m.created_at
 	if v == nil {
 		return
@@ -117,17 +117,17 @@ func (m *ArticleMutation) CreatedAt() (r time.Time, exists bool) {
 }
 
 // ResetCreatedAt reset all changes of the created_at field.
-func (m *ArticleMutation) ResetCreatedAt() {
+func (m *ProductMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
 // SetUpdatedAt sets the updated_at field.
-func (m *ArticleMutation) SetUpdatedAt(t time.Time) {
+func (m *ProductMutation) SetUpdatedAt(t time.Time) {
 	m.updated_at = &t
 }
 
 // UpdatedAt returns the updated_at value in the mutation.
-func (m *ArticleMutation) UpdatedAt() (r time.Time, exists bool) {
+func (m *ProductMutation) UpdatedAt() (r time.Time, exists bool) {
 	v := m.updated_at
 	if v == nil {
 		return
@@ -136,33 +136,33 @@ func (m *ArticleMutation) UpdatedAt() (r time.Time, exists bool) {
 }
 
 // ResetUpdatedAt reset all changes of the updated_at field.
-func (m *ArticleMutation) ResetUpdatedAt() {
+func (m *ProductMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
 // Op returns the operation name.
-func (m *ArticleMutation) Op() Op {
+func (m *ProductMutation) Op() Op {
 	return m.op
 }
 
-// Type returns the node type of this mutation (Article).
-func (m *ArticleMutation) Type() string {
+// Type returns the node type of this mutation (Product).
+func (m *ProductMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during
 // this mutation. Note that, in order to get all numeric
 // fields that were in/decremented, call AddedFields().
-func (m *ArticleMutation) Fields() []string {
+func (m *ProductMutation) Fields() []string {
 	fields := make([]string, 0, 3)
-	if m.name != nil {
-		fields = append(fields, article.FieldName)
+	if m.title != nil {
+		fields = append(fields, product.FieldTitle)
 	}
 	if m.created_at != nil {
-		fields = append(fields, article.FieldCreatedAt)
+		fields = append(fields, product.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
-		fields = append(fields, article.FieldUpdatedAt)
+		fields = append(fields, product.FieldUpdatedAt)
 	}
 	return fields
 }
@@ -170,13 +170,13 @@ func (m *ArticleMutation) Fields() []string {
 // Field returns the value of a field with the given name.
 // The second boolean value indicates that this field was
 // not set, or was not define in the schema.
-func (m *ArticleMutation) Field(name string) (ent.Value, bool) {
+func (m *ProductMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case article.FieldName:
-		return m.Name()
-	case article.FieldCreatedAt:
+	case product.FieldTitle:
+		return m.Title()
+	case product.FieldCreatedAt:
 		return m.CreatedAt()
-	case article.FieldUpdatedAt:
+	case product.FieldUpdatedAt:
 		return m.UpdatedAt()
 	}
 	return nil, false
@@ -185,23 +185,23 @@ func (m *ArticleMutation) Field(name string) (ent.Value, bool) {
 // SetField sets the value for the given name. It returns an
 // error if the field is not defined in the schema, or if the
 // type mismatch the field type.
-func (m *ArticleMutation) SetField(name string, value ent.Value) error {
+func (m *ProductMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case article.FieldName:
+	case product.FieldTitle:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetName(v)
+		m.SetTitle(v)
 		return nil
-	case article.FieldCreatedAt:
+	case product.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
 		return nil
-	case article.FieldUpdatedAt:
+	case product.FieldUpdatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -209,78 +209,78 @@ func (m *ArticleMutation) SetField(name string, value ent.Value) error {
 		m.SetUpdatedAt(v)
 		return nil
 	}
-	return fmt.Errorf("unknown Article field %s", name)
+	return fmt.Errorf("unknown Product field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented
 // or decremented during this mutation.
-func (m *ArticleMutation) AddedFields() []string {
+func (m *ProductMutation) AddedFields() []string {
 	return nil
 }
 
 // AddedField returns the numeric value that was in/decremented
 // from a field with the given name. The second value indicates
 // that this field was not set, or was not define in the schema.
-func (m *ArticleMutation) AddedField(name string) (ent.Value, bool) {
+func (m *ProductMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
 // AddField adds the value for the given name. It returns an
 // error if the field is not defined in the schema, or if the
 // type mismatch the field type.
-func (m *ArticleMutation) AddField(name string, value ent.Value) error {
+func (m *ProductMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown Article numeric field %s", name)
+	return fmt.Errorf("unknown Product numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared
 // during this mutation.
-func (m *ArticleMutation) ClearedFields() []string {
+func (m *ProductMutation) ClearedFields() []string {
 	return nil
 }
 
 // FieldCleared returns a boolean indicates if this field was
 // cleared in this mutation.
-func (m *ArticleMutation) FieldCleared(name string) bool {
+func (m *ProductMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value for the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *ArticleMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown Article nullable field %s", name)
+func (m *ProductMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Product nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation regarding the
 // given field name. It returns an error if the field is not
 // defined in the schema.
-func (m *ArticleMutation) ResetField(name string) error {
+func (m *ProductMutation) ResetField(name string) error {
 	switch name {
-	case article.FieldName:
-		m.ResetName()
+	case product.FieldTitle:
+		m.ResetTitle()
 		return nil
-	case article.FieldCreatedAt:
+	case product.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
-	case article.FieldUpdatedAt:
+	case product.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
 	}
-	return fmt.Errorf("unknown Article field %s", name)
+	return fmt.Errorf("unknown Product field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this
 // mutation.
-func (m *ArticleMutation) AddedEdges() []string {
+func (m *ProductMutation) AddedEdges() []string {
 	edges := make([]string, 0, 0)
 	return edges
 }
 
 // AddedIDs returns all ids (to other nodes) that were added for
 // the given edge name.
-func (m *ArticleMutation) AddedIDs(name string) []ent.Value {
+func (m *ProductMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	}
 	return nil
@@ -288,14 +288,14 @@ func (m *ArticleMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this
 // mutation.
-func (m *ArticleMutation) RemovedEdges() []string {
+func (m *ProductMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 0)
 	return edges
 }
 
 // RemovedIDs returns all ids (to other nodes) that were removed for
 // the given edge name.
-func (m *ArticleMutation) RemovedIDs(name string) []ent.Value {
+func (m *ProductMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
 	}
 	return nil
@@ -303,14 +303,14 @@ func (m *ArticleMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this
 // mutation.
-func (m *ArticleMutation) ClearedEdges() []string {
+func (m *ProductMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 0)
 	return edges
 }
 
 // EdgeCleared returns a boolean indicates if this edge was
 // cleared in this mutation.
-func (m *ArticleMutation) EdgeCleared(name string) bool {
+func (m *ProductMutation) EdgeCleared(name string) bool {
 	switch name {
 	}
 	return false
@@ -318,15 +318,15 @@ func (m *ArticleMutation) EdgeCleared(name string) bool {
 
 // ClearEdge clears the value for the given name. It returns an
 // error if the edge name is not defined in the schema.
-func (m *ArticleMutation) ClearEdge(name string) error {
-	return fmt.Errorf("unknown Article unique edge %s", name)
+func (m *ProductMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Product unique edge %s", name)
 }
 
 // ResetEdge resets all changes in the mutation regarding the
 // given edge name. It returns an error if the edge is not
 // defined in the schema.
-func (m *ArticleMutation) ResetEdge(name string) error {
+func (m *ProductMutation) ResetEdge(name string) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown Article edge %s", name)
+	return fmt.Errorf("unknown Product edge %s", name)
 }

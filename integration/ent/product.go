@@ -8,17 +8,17 @@ import (
 	"time"
 
 	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/phogolabs/ent/integration/ent/article"
-	"github.com/xtgo/uuid"
+	"github.com/phogolabs/ent/integration/ent/product"
+	"github.com/google/uuid"
 )
 
-// Article is the model entity for the Article schema.
-type Article struct {
+// Product is the model entity for the Product schema.
+type Product struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	// Title holds the value of the "title" field.
+	Title string `json:"title,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -26,83 +26,83 @@ type Article struct {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Article) scanValues() []interface{} {
+func (*Product) scanValues() []interface{} {
 	return []interface{}{
 		&uuid.UUID{},      // id
-		&sql.NullString{}, // name
+		&sql.NullString{}, // title
 		&sql.NullTime{},   // created_at
 		&sql.NullTime{},   // updated_at
 	}
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Article fields.
-func (a *Article) assignValues(values ...interface{}) error {
-	if m, n := len(values), len(article.Columns); m < n {
+// to the Product fields.
+func (pr *Product) assignValues(values ...interface{}) error {
+	if m, n := len(values), len(product.Columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	if value, ok := values[0].(*uuid.UUID); !ok {
 		return fmt.Errorf("unexpected type %T for field id", values[0])
 	} else if value != nil {
-		a.ID = *value
+		pr.ID = *value
 	}
 	values = values[1:]
 	if value, ok := values[0].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field name", values[0])
+		return fmt.Errorf("unexpected type %T for field title", values[0])
 	} else if value.Valid {
-		a.Name = value.String
+		pr.Title = value.String
 	}
 	if value, ok := values[1].(*sql.NullTime); !ok {
 		return fmt.Errorf("unexpected type %T for field created_at", values[1])
 	} else if value.Valid {
-		a.CreatedAt = value.Time
+		pr.CreatedAt = value.Time
 	}
 	if value, ok := values[2].(*sql.NullTime); !ok {
 		return fmt.Errorf("unexpected type %T for field updated_at", values[2])
 	} else if value.Valid {
-		a.UpdatedAt = value.Time
+		pr.UpdatedAt = value.Time
 	}
 	return nil
 }
 
-// Update returns a builder for updating this Article.
-// Note that, you need to call Article.Unwrap() before calling this method, if this Article
+// Update returns a builder for updating this Product.
+// Note that, you need to call Product.Unwrap() before calling this method, if this Product
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (a *Article) Update() *ArticleUpdateOne {
-	return (&ArticleClient{config: a.config}).UpdateOne(a)
+func (pr *Product) Update() *ProductUpdateOne {
+	return (&ProductClient{config: pr.config}).UpdateOne(pr)
 }
 
 // Unwrap unwraps the entity that was returned from a transaction after it was closed,
 // so that all next queries will be executed through the driver which created the transaction.
-func (a *Article) Unwrap() *Article {
-	tx, ok := a.config.driver.(*txDriver)
+func (pr *Product) Unwrap() *Product {
+	tx, ok := pr.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Article is not a transactional entity")
+		panic("ent: Product is not a transactional entity")
 	}
-	a.config.driver = tx.drv
-	return a
+	pr.config.driver = tx.drv
+	return pr
 }
 
 // String implements the fmt.Stringer.
-func (a *Article) String() string {
+func (pr *Product) String() string {
 	var builder strings.Builder
-	builder.WriteString("Article(")
-	builder.WriteString(fmt.Sprintf("id=%v", a.ID))
-	builder.WriteString(", name=")
-	builder.WriteString(a.Name)
+	builder.WriteString("Product(")
+	builder.WriteString(fmt.Sprintf("id=%v", pr.ID))
+	builder.WriteString(", title=")
+	builder.WriteString(pr.Title)
 	builder.WriteString(", created_at=")
-	builder.WriteString(a.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(pr.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", updated_at=")
-	builder.WriteString(a.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
-// Articles is a parsable slice of Article.
-type Articles []*Article
+// Products is a parsable slice of Product.
+type Products []*Product
 
-func (a Articles) config(cfg config) {
-	for _i := range a {
-		a[_i].config = cfg
+func (pr Products) config(cfg config) {
+	for _i := range pr {
+		pr[_i].config = cfg
 	}
 }

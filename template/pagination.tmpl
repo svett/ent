@@ -25,46 +25,41 @@ type CursorPosition struct {
 	Value     interface{}
 }
 
-// Equal return true if the position is equal
-func (p *CursorPosition) Equal(n *CursorPosition) bool {
-	return strings.EqualFold(p.Column, n.Column) &&
-		strings.EqualFold(p.Direction, n.Direction)
+// Cursor represents the cursor
+type Cursor struct {
+	positions []*CursorPosition
 }
 
-// Cursor represents the cursor
-type Cursor []*CursorPosition
-
 // DecodeCursor decodes a cursor from its base-64 string representation.
-func DecodeCursor(token, order string) (*Cursor, error) {
+func DecodeCursor(order, token string) (*Cursor, error) {
 	cursor := &Cursor{}
 
-	if token == "" {
-		return cursor.apply(order)
-	}
-
-	if n := len(token) % 4; n != 0 {
-		token += strings.Repeat("=", 4-n)
-	}
-
-	data, err := base64.URLEncoding.DecodeString(token)
-	if err != nil {
+	if err := cursor.positionsAt(order); err != nil {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(data, cursor); err != nil {
+	if err := cursor.valuesAt(token); err != nil {
 		return nil, err
 	}
 
-	return cursor.apply(order)
+	return cursor, nil
 }
 
 // String returns a base-64 string representation of a cursor.
 func (c *Cursor) String() string {
-	if c == nil || len(*c) == 0 {
+	count := len(c.positions)
+
+	if count == 0 {
 		return ""
 	}
 
-	data, err := json.Marshal(c)
+	values := make([]interface{}, count)
+
+	for index, position := range c.positions {
+		values[index] = position.Value
+	}
+
+	data, err := json.Marshal(values)
 	if err != nil {
 		panic(err)
 	}
@@ -79,6 +74,7 @@ func (c *Cursor) Next(input interface{}) *Cursor {
 		source = reflect.ValueOf(input)
 	)
 
+	//TODO: do not use reflection
 	if source.Type().Kind() == reflect.Slice {
 		if source.Len() == 0 {
 			return &next
@@ -87,33 +83,32 @@ func (c *Cursor) Next(input interface{}) *Cursor {
 		source = source.Index(source.Len() - 1)
 	}
 
-	for _, position := range *c {
+	for _, position := range c.positions {
 		index := &CursorPosition{
 			Column:    position.Column,
 			Direction: position.Direction,
 			Value:     mapper.FieldByName(source, position.Column).Interface(),
 		}
 
-		next = append(next, index)
+		next.positions = append(next.positions, index)
 	}
 
 	return &next
 }
 
-func (c *Cursor) apply(order string) (*Cursor, error) {
+func (c *Cursor) positionsAt(order string) error {
 	const (
 		separator = ","
 		asc       = "+"
 		desc      = "-"
 	)
 
-	var (
-		count = len(*c)
-		empty = count == 0
-	)
-
-	for index, field := range strings.Split(order, separator) {
+	for _, field := range strings.Split(order, separator) {
 		field = strings.TrimSpace(field)
+
+		if field == "" {
+			continue
+		}
 
 		position := &CursorPosition{
 			Column:    field,
@@ -133,17 +128,42 @@ func (c *Cursor) apply(order string) (*Cursor, error) {
 			}
 		}
 
-		switch {
-		case empty:
-			*c = append(*c, position)
-		case index >= count:
-			return nil, fmt.Errorf("ent: invalid pagination token position")
-		case !position.Equal((*c)[index]):
-			return nil, fmt.Errorf("ent: mismatched pagination token position")
-		}
+		// TODO: validate column name
+		c.positions = append(c.positions, position)
 	}
 
-	return c, nil
+	return nil
+}
+
+func (c *Cursor) valuesAt(token string) error {
+	values := []interface{}{}
+
+	if token == "" {
+		return nil
+	}
+
+	if n := len(token) % 4; n != 0 {
+		token += strings.Repeat("=", 4-n)
+	}
+
+	data, err := base64.URLEncoding.DecodeString(token)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(data, &values); err != nil {
+		return err
+	}
+
+	for index, position := range c.positions {
+		if index >= len(values) {
+			return fmt.Errorf("ent: invalid pagination cursor")
+		}
+
+		position.Value = values[index]
+	}
+
+	return nil
 }
 
 // Pagination represents the pagination
@@ -153,65 +173,100 @@ type Pagination struct {
 	Limit     int
 }
 
-// WithLimit returns the pagination with given limit
-func (pg Pagination) WIthLimit(limit int) *Pagination {
-	pg.Limit = limit
-  return &pg
+// NewPagination creates a new pagination
+func NewPagination() *Pagination {
+	return &Pagination{}
 }
 
-// Start sets the pagination
-func (pg *Pagination) Start(cursor *Cursor) {
-	pg.Predicate = pg.apply(*cursor)
+// WithLimit returns the pagination with given limit
+func (pg Pagination) WithLimit(limit int) *Pagination {
+	pg.Limit = limit
+	return &pg
+}
 
-	for _, position := range *cursor {
+// WithCursor set the pagination cursor
+func (pg Pagination) WithCursor(cursor *Cursor) *Pagination {
+	pg.Predicate = pg.apply(cursor.positions)
+
+	for _, position := range cursor.positions {
 		switch position.Direction {
 		case "+":
-			pg.Order = append(pg.Order, pg.asc(position.Column))
+			pg.Order = append(pg.Order, asc(position.Column))
 		case "-":
-			pg.Order = append(pg.Order, pg.desc(position.Column))
+			pg.Order = append(pg.Order, desc(position.Column))
 		}
 	}
+
+	return &pg
 }
 
 func (pg *Pagination) apply(positions []*CursorPosition) Predicate {
 	var (
-		predicate Predicate = func(*sql.Selector) {}
-		position            = positions[0]
+		predicate        Predicate = func(*sql.Selector) {}
+		predicateCompare Predicate = func(*sql.Selector) {}
+		predicateEqual   Predicate = func(*sql.Selector) {}
 	)
 
+	if len(positions) == 0 {
+		return predicate
+	}
+
+	position := positions[0]
+
 	if position.Value != nil {
+		predicateEqual = eq(position.Column, position.Value)
+
 		switch position.Direction {
 		case "+":
-			predicate = pg.gt(position.Column, position.Value)
+			predicateCompare = gt(position.Column, position.Value)
 		case "-":
-			predicate = pg.lt(position.Column, position.Value)
+			predicateCompare = lt(position.Column, position.Value)
 		default:
-			predicate = pg.gt(position.Column, position.Value)
+			predicateCompare = gt(position.Column, position.Value)
 		}
 	}
 
 	positions = positions[1:]
+	predicate = predicateCompare
 
 	if len(positions) > 0 {
-		predicate = pg.or(predicate, pg.apply(positions))
+		predicate = or(predicateCompare,
+			and(predicateEqual, pg.apply(positions)))
 	}
 
 	return predicate
 }
 
-func (pg *Pagination) gt(field string, value interface{}) Predicate {
+func (pq *ProductQuery) Paginate(page *Pagination) *ProductQuery {
+	pq = pq.Where(page.Predicate)
+	pq = pq.Limit(page.Limit)
+
+	for _, predicate := range page.Order {
+		pq = pq.Order(predicate)
+	}
+
+	return pq
+}
+
+func eq(field string, value interface{}) Predicate {
+	return func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(field), value))
+	}
+}
+
+func gt(field string, value interface{}) Predicate {
 	return func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(field), value))
 	}
 }
 
-func (pg *Pagination) lt(field string, value interface{}) Predicate {
+func lt(field string, value interface{}) Predicate {
 	return func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(field), value))
 	}
 }
 
-func (pg *Pagination) and(predicates ...Predicate) Predicate {
+func and(predicates ...Predicate) Predicate {
 	return func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
 		for _, p := range predicates {
@@ -221,7 +276,7 @@ func (pg *Pagination) and(predicates ...Predicate) Predicate {
 	}
 }
 
-func (pg *Pagination) or(predicates ...Predicate) Predicate {
+func or(predicates ...Predicate) Predicate {
 	return func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
 		for i, p := range predicates {
@@ -234,7 +289,7 @@ func (pg *Pagination) or(predicates ...Predicate) Predicate {
 	}
 }
 
-func (pg *Pagination) asc(fields ...string) Predicate {
+func asc(fields ...string) Predicate {
 	return func(s *sql.Selector) {
 		for _, f := range fields {
 			s.OrderBy(sql.Asc(f))
@@ -242,7 +297,7 @@ func (pg *Pagination) asc(fields ...string) Predicate {
 	}
 }
 
-func (pg *Pagination) desc(fields ...string) Predicate {
+func desc(fields ...string) Predicate {
 	return func(s *sql.Selector) {
 		for _, f := range fields {
 			s.OrderBy(sql.Desc(f))

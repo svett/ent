@@ -5,7 +5,7 @@ package ent
 import (
 	"time"
 
-	"github.com/phogolabs/ent/integration/ent/article"
+	"github.com/phogolabs/ent/integration/ent/product"
 	"github.com/phogolabs/ent/integration/ent/schema"
 )
 
@@ -13,20 +13,20 @@ import (
 // code (default values, validators or hooks) and stitches it
 // to their package variables.
 func init() {
-	articleFields := schema.Article{}.Fields()
-	_ = articleFields
-	// articleDescName is the schema descriptor for name field.
-	articleDescName := articleFields[1].Descriptor()
-	// article.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	article.NameValidator = articleDescName.Validators[0].(func(string) error)
-	// articleDescCreatedAt is the schema descriptor for created_at field.
-	articleDescCreatedAt := articleFields[2].Descriptor()
-	// article.DefaultCreatedAt holds the default value on creation for the created_at field.
-	article.DefaultCreatedAt = articleDescCreatedAt.Default.(func() time.Time)
-	// articleDescUpdatedAt is the schema descriptor for updated_at field.
-	articleDescUpdatedAt := articleFields[3].Descriptor()
-	// article.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	article.DefaultUpdatedAt = articleDescUpdatedAt.Default.(func() time.Time)
-	// article.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	article.UpdateDefaultUpdatedAt = articleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	productFields := schema.Product{}.Fields()
+	_ = productFields
+	// productDescTitle is the schema descriptor for title field.
+	productDescTitle := productFields[1].Descriptor()
+	// product.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	product.TitleValidator = productDescTitle.Validators[0].(func(string) error)
+	// productDescCreatedAt is the schema descriptor for created_at field.
+	productDescCreatedAt := productFields[2].Descriptor()
+	// product.DefaultCreatedAt holds the default value on creation for the created_at field.
+	product.DefaultCreatedAt = productDescCreatedAt.Default.(func() time.Time)
+	// productDescUpdatedAt is the schema descriptor for updated_at field.
+	productDescUpdatedAt := productFields[3].Descriptor()
+	// product.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	product.DefaultUpdatedAt = productDescUpdatedAt.Default.(func() time.Time)
+	// product.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	product.UpdateDefaultUpdatedAt = productDescUpdatedAt.UpdateDefault.(func() time.Time)
 }

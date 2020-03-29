@@ -6,5 +6,5 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 )
 
-// Article is the predicate function for article builders.
-type Article func(*sql.Selector)
+// Product is the predicate function for product builders.
+type Product func(*sql.Selector)

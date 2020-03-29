@@ -144,26 +144,26 @@ type fixedDecisionRule struct{ err error }
 func (f fixedDecisionRule) EvalQuery(context.Context, ent.Query) error       { return f.err }
 func (f fixedDecisionRule) EvalMutation(context.Context, ent.Mutation) error { return f.err }
 
-// The ArticleQueryRuleFunc type is an adapter to allow the use of ordinary
+// The ProductQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
-type ArticleQueryRuleFunc func(context.Context, *ent.ArticleQuery) error
+type ProductQueryRuleFunc func(context.Context, *ent.ProductQuery) error
 
 // EvalQuery return f(ctx, q).
-func (f ArticleQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.ArticleQuery); ok {
+func (f ProductQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ProductQuery); ok {
 		return f(ctx, q)
 	}
-	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ArticleQuery", q)
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ProductQuery", q)
 }
 
-// The ArticleMutationRuleFunc type is an adapter to allow the use of ordinary
+// The ProductMutationRuleFunc type is an adapter to allow the use of ordinary
 // functions as a mutation rule.
-type ArticleMutationRuleFunc func(context.Context, *ent.ArticleMutation) error
+type ProductMutationRuleFunc func(context.Context, *ent.ProductMutation) error
 
 // EvalMutation calls f(ctx, m).
-func (f ArticleMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
-	if m, ok := m.(*ent.ArticleMutation); ok {
+func (f ProductMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ProductMutation); ok {
 		return f(ctx, m)
 	}
-	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ArticleMutation", m)
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ProductMutation", m)
 }

@@ -9,15 +9,15 @@ import (
 	"github.com/phogolabs/ent/integration/ent"
 )
 
-// The ArticleFunc type is an adapter to allow the use of ordinary
-// function as Article mutator.
-type ArticleFunc func(context.Context, *ent.ArticleMutation) (ent.Value, error)
+// The ProductFunc type is an adapter to allow the use of ordinary
+// function as Product mutator.
+type ProductFunc func(context.Context, *ent.ProductMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f ArticleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.ArticleMutation)
+func (f ProductFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ProductMutation)
 	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ArticleMutation", m)
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProductMutation", m)
 	}
 	return f(ctx, mv)
 }

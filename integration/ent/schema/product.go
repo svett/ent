@@ -8,22 +8,21 @@ import (
 	"github.com/google/uuid"
 )
 
-// Article holds the schema definition for the Article entity.
-type Article struct {
+// Product holds the schema definition for the Product entity.
+type Product struct {
 	ent.Schema
 }
 
-// Fields of the Article.
-func (Article) Fields() []ent.Field {
+// Fields of the Product.
+func (Product) Fields() []ent.Field {
 	return []ent.Field{
 		field.
 			UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
 		field.
-			String("name").
-			NotEmpty().
-			Unique(),
+			String("title").
+			NotEmpty(),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
@@ -34,7 +33,7 @@ func (Article) Fields() []ent.Field {
 	}
 }
 
-// Edges of the Article.
-func (Article) Edges() []ent.Edge {
+// Edges of the Product.
+func (Product) Edges() []ent.Edge {
 	return nil
 }

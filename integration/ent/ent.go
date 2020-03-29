@@ -11,7 +11,7 @@ import (
 	"github.com/facebookincubator/ent/dialect"
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/xtgo/uuid"
+	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 )
 

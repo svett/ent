@@ -8,9 +8,9 @@ import (
 	"log"
 
 	"github.com/phogolabs/ent/integration/ent/migrate"
-	"github.com/xtgo/uuid"
+	"github.com/google/uuid"
 
-	"github.com/phogolabs/ent/integration/ent/article"
+	"github.com/phogolabs/ent/integration/ent/product"
 
 	"github.com/facebookincubator/ent/dialect"
 	"github.com/facebookincubator/ent/dialect/sql"
@@ -21,8 +21,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// Article is the client for interacting with the Article builders.
-	Article *ArticleClient
+	// Product is the client for interacting with the Product builders.
+	Product *ProductClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -36,7 +36,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.Article = NewArticleClient(c.config)
+	c.Product = NewProductClient(c.config)
 }
 
 // Open opens a connection to the database specified by the driver name and a
@@ -67,14 +67,14 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
 		config:  cfg,
-		Article: NewArticleClient(cfg),
+		Product: NewProductClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Article.
+//		Product.
 //		Query().
 //		Count(ctx)
 //
@@ -96,88 +96,88 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Article.Use(hooks...)
+	c.Product.Use(hooks...)
 }
 
-// ArticleClient is a client for the Article schema.
-type ArticleClient struct {
+// ProductClient is a client for the Product schema.
+type ProductClient struct {
 	config
 }
 
-// NewArticleClient returns a client for the Article from the given config.
-func NewArticleClient(c config) *ArticleClient {
-	return &ArticleClient{config: c}
+// NewProductClient returns a client for the Product from the given config.
+func NewProductClient(c config) *ProductClient {
+	return &ProductClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `article.Hooks(f(g(h())))`.
-func (c *ArticleClient) Use(hooks ...Hook) {
-	c.hooks.Article = append(c.hooks.Article, hooks...)
+// A call to `Use(f, g, h)` equals to `product.Hooks(f(g(h())))`.
+func (c *ProductClient) Use(hooks ...Hook) {
+	c.hooks.Product = append(c.hooks.Product, hooks...)
 }
 
-// Create returns a create builder for Article.
-func (c *ArticleClient) Create() *ArticleCreate {
-	mutation := newArticleMutation(c.config, OpCreate)
-	return &ArticleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a create builder for Product.
+func (c *ProductClient) Create() *ProductCreate {
+	mutation := newProductMutation(c.config, OpCreate)
+	return &ProductCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Update returns an update builder for Article.
-func (c *ArticleClient) Update() *ArticleUpdate {
-	mutation := newArticleMutation(c.config, OpUpdate)
-	return &ArticleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Product.
+func (c *ProductClient) Update() *ProductUpdate {
+	mutation := newProductMutation(c.config, OpUpdate)
+	return &ProductUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ArticleClient) UpdateOne(a *Article) *ArticleUpdateOne {
-	return c.UpdateOneID(a.ID)
+func (c *ProductClient) UpdateOne(pr *Product) *ProductUpdateOne {
+	return c.UpdateOneID(pr.ID)
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *ArticleClient) UpdateOneID(id uuid.UUID) *ArticleUpdateOne {
-	mutation := newArticleMutation(c.config, OpUpdateOne)
+func (c *ProductClient) UpdateOneID(id uuid.UUID) *ProductUpdateOne {
+	mutation := newProductMutation(c.config, OpUpdateOne)
 	mutation.id = &id
-	return &ArticleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+	return &ProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Article.
-func (c *ArticleClient) Delete() *ArticleDelete {
-	mutation := newArticleMutation(c.config, OpDelete)
-	return &ArticleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Product.
+func (c *ProductClient) Delete() *ProductDelete {
+	mutation := newProductMutation(c.config, OpDelete)
+	return &ProductDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a delete builder for the given entity.
-func (c *ArticleClient) DeleteOne(a *Article) *ArticleDeleteOne {
-	return c.DeleteOneID(a.ID)
+func (c *ProductClient) DeleteOne(pr *Product) *ProductDeleteOne {
+	return c.DeleteOneID(pr.ID)
 }
 
 // DeleteOneID returns a delete builder for the given id.
-func (c *ArticleClient) DeleteOneID(id uuid.UUID) *ArticleDeleteOne {
-	builder := c.Delete().Where(article.ID(id))
+func (c *ProductClient) DeleteOneID(id uuid.UUID) *ProductDeleteOne {
+	builder := c.Delete().Where(product.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &ArticleDeleteOne{builder}
+	return &ProductDeleteOne{builder}
 }
 
-// Create returns a query builder for Article.
-func (c *ArticleClient) Query() *ArticleQuery {
-	return &ArticleQuery{config: c.config}
+// Create returns a query builder for Product.
+func (c *ProductClient) Query() *ProductQuery {
+	return &ProductQuery{config: c.config}
 }
 
-// Get returns a Article entity by its id.
-func (c *ArticleClient) Get(ctx context.Context, id uuid.UUID) (*Article, error) {
-	return c.Query().Where(article.ID(id)).Only(ctx)
+// Get returns a Product entity by its id.
+func (c *ProductClient) Get(ctx context.Context, id uuid.UUID) (*Product, error) {
+	return c.Query().Where(product.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *ArticleClient) GetX(ctx context.Context, id uuid.UUID) *Article {
-	a, err := c.Get(ctx, id)
+func (c *ProductClient) GetX(ctx context.Context, id uuid.UUID) *Product {
+	pr, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return a
+	return pr
 }
 
 // Hooks returns the client hooks.
-func (c *ArticleClient) Hooks() []Hook {
-	return c.hooks.Article
+func (c *ProductClient) Hooks() []Hook {
+	return c.hooks.Product
 }
