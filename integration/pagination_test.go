@@ -59,7 +59,7 @@ var _ = Describe("Pagination", func() {
 			create("Hat")
 		})
 
-		query := func(cursor *ent.Cursor, limit int) []*ent.Product {
+		query := func(cursor *ent.ProductCursor, limit int) []*ent.Product {
 			query := client.Product.Query().Seek(cursor).Limit(limit)
 
 			records, err := query.All(ctx)
@@ -75,7 +75,7 @@ var _ = Describe("Pagination", func() {
 		})
 
 		It("returns the entities page by page", func() {
-			cursor, err := ent.DecodeCursor("+title,+id", "")
+			cursor, err := ent.DecodeProductCursor("+title,+id", "")
 			Expect(err).NotTo(HaveOccurred())
 
 			spew.Dump(cursor)

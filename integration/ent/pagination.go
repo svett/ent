@@ -18,6 +18,52 @@ var mapper = reflectx.NewMapper("json")
 // Predicate creates a predicate
 type Predicate = func(s *sql.Selector)
 
+// EQ applies an equal predicate
+func EQ(field string, value interface{}) Predicate {
+	return func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(field), value))
+	}
+}
+
+// GT applies a greater than predicate
+func GT(field string, value interface{}) Predicate {
+	return func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(field), value))
+	}
+}
+
+// LT applies a less than predicate
+func LT(field string, value interface{}) Predicate {
+	return func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(field), value))
+	}
+}
+
+// And groups list of predicates with the AND operator between them.
+func And(predicates ...Predicate) Predicate {
+	return func(s *sql.Selector) {
+		s1 := s.Clone().SetP(nil)
+		for _, p := range predicates {
+			p(s1)
+		}
+		s.Where(s1.P())
+	}
+}
+
+// Or groups list of predicates with the OR operator between them.
+func Or(predicates ...Predicate) Predicate {
+	return func(s *sql.Selector) {
+		s1 := s.Clone().SetP(nil)
+		for i, p := range predicates {
+			if i > 0 {
+				s1.Or()
+			}
+			p(s1)
+		}
+		s.Where(s1.P())
+	}
+}
+
 // CursorPosition represets a cursor position
 type CursorPosition struct {
 	Column    string
@@ -25,14 +71,14 @@ type CursorPosition struct {
 	Value     interface{}
 }
 
-// Cursor represents the cursor
-type Cursor struct {
+// ProductCursor represents the cursor
+type ProductCursor struct {
 	positions []*CursorPosition
 }
 
 // DecodeCursor decodes a cursor from its base-64 string representation.
-func DecodeCursor(order, token string) (*Cursor, error) {
-	cursor := &Cursor{}
+func DecodeProductCursor(order, token string) (*ProductCursor, error) {
+	cursor := &ProductCursor{}
 
 	if err := cursor.positionsAt(order); err != nil {
 		return nil, err
@@ -46,7 +92,7 @@ func DecodeCursor(order, token string) (*Cursor, error) {
 }
 
 // String returns a base-64 string representation of a cursor.
-func (c *Cursor) String() string {
+func (c *ProductCursor) String() string {
 	count := len(c.positions)
 
 	if count == 0 {
@@ -68,9 +114,9 @@ func (c *Cursor) String() string {
 }
 
 // Next returns the next cursor
-func (c *Cursor) Next(input interface{}) *Cursor {
+func (c *ProductCursor) Next(input interface{}) *ProductCursor {
 	var (
-		next   = Cursor{}
+		next   = ProductCursor{}
 		source = reflect.ValueOf(input)
 	)
 
@@ -96,7 +142,7 @@ func (c *Cursor) Next(input interface{}) *Cursor {
 	return &next
 }
 
-func (c *Cursor) positionsAt(order string) error {
+func (c *ProductCursor) positionsAt(order string) error {
 	const (
 		separator = ","
 		asc       = "+"
@@ -128,14 +174,22 @@ func (c *Cursor) positionsAt(order string) error {
 			}
 		}
 
-		// TODO: validate column name
+		switch position.Column {
+		case "id":
+		case "title":
+		case "created_at":
+		case "updated_at":
+		default:
+			return fmt.Errorf("ent: unknown '%s' column", position.Column)
+		}
+
 		c.positions = append(c.positions, position)
 	}
 
 	return nil
 }
 
-func (c *Cursor) valuesAt(token string) error {
+func (c *ProductCursor) valuesAt(token string) error {
 	values := []interface{}{}
 
 	if token == "" {
@@ -167,113 +221,54 @@ func (c *Cursor) valuesAt(token string) error {
 }
 
 // Seek seeks the query to a given cursor
-func (pq *ProductQuery) Seek(cursor *Cursor) *ProductQuery {
-	var apply func(positions []*CursorPosition) Predicate
-
-	apply = func(positions []*CursorPosition) Predicate {
-		var (
-			predicate        Predicate = func(*sql.Selector) {}
-			predicateCompare Predicate = func(*sql.Selector) {}
-			predicateEqual   Predicate = func(*sql.Selector) {}
-		)
-
-		if len(positions) == 0 {
-			return predicate
-		}
-
-		position := positions[0]
-
-		if position.Value != nil {
-			predicateEqual = eq(position.Column, position.Value)
-
-			switch position.Direction {
-			case "+":
-				predicateCompare = gt(position.Column, position.Value)
-			case "-":
-				predicateCompare = lt(position.Column, position.Value)
-			default:
-				predicateCompare = gt(position.Column, position.Value)
-			}
-		}
-
-		positions = positions[1:]
-		predicate = predicateCompare
-
-		if len(positions) > 0 {
-			predicate = or(predicateCompare,
-				and(predicateEqual, apply(positions)))
-		}
-
-		return predicate
-	}
-
-	pq.predicates = append(pq.predicates, apply(cursor.positions))
+func (pq *ProductQuery) Seek(cursor *ProductCursor) *ProductQuery {
+	pq.predicates = append(pq.predicates, pq.seek(cursor.positions))
 
 	for _, position := range cursor.positions {
 		switch position.Direction {
 		case "+":
-			pq.order = append(pq.order, asc(position.Column))
+			pq.order = append(pq.order, Asc(position.Column))
 		case "-":
-			pq.order = append(pq.order, desc(position.Column))
+			pq.order = append(pq.order, Desc(position.Column))
 		}
 	}
 
 	return pq
 }
 
-func eq(field string, value interface{}) Predicate {
-	return func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(field), value))
-	}
-}
+func (pq *ProductQuery) seek(positions []*CursorPosition) Predicate {
+	var (
+		predicate        Predicate = func(*sql.Selector) {}
+		predicateCompare Predicate = func(*sql.Selector) {}
+		predicateEqual   Predicate = func(*sql.Selector) {}
+	)
 
-func gt(field string, value interface{}) Predicate {
-	return func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(field), value))
+	if len(positions) == 0 {
+		return predicate
 	}
-}
 
-func lt(field string, value interface{}) Predicate {
-	return func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(field), value))
-	}
-}
+	position := positions[0]
 
-func and(predicates ...Predicate) Predicate {
-	return func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for _, p := range predicates {
-			p(s1)
-		}
-		s.Where(s1.P())
-	}
-}
+	if position.Value != nil {
+		predicateEqual = EQ(position.Column, position.Value)
 
-func or(predicates ...Predicate) Predicate {
-	return func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for i, p := range predicates {
-			if i > 0 {
-				s1.Or()
-			}
-			p(s1)
-		}
-		s.Where(s1.P())
-	}
-}
-
-func asc(fields ...string) Predicate {
-	return func(s *sql.Selector) {
-		for _, f := range fields {
-			s.OrderBy(sql.Asc(f))
+		switch position.Direction {
+		case "+":
+			predicateCompare = GT(position.Column, position.Value)
+		case "-":
+			predicateCompare = LT(position.Column, position.Value)
+		default:
+			predicateCompare = GT(position.Column, position.Value)
 		}
 	}
-}
 
-func desc(fields ...string) Predicate {
-	return func(s *sql.Selector) {
-		for _, f := range fields {
-			s.OrderBy(sql.Desc(f))
-		}
+	positions = positions[1:]
+	predicate = predicateCompare
+
+	if len(positions) > 0 {
+		predicate = Or(predicateCompare,
+			And(predicateEqual, pq.seek(positions)))
 	}
+
+	return predicate
 }
