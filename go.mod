@@ -11,7 +11,7 @@ require (
 	github.com/lib/pq v1.2.0
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
-	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c
+	github.com/google/uuid v0.0.0-20140804021211-a0b114877d4c
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
