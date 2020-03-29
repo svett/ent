@@ -166,87 +166,61 @@ func (c *Cursor) valuesAt(token string) error {
 	return nil
 }
 
-// Pagination represents the pagination
-type Pagination struct {
-	Predicate Predicate
-	Order     []Predicate
-	Limit     int
-}
+// Seek seeks the query to a given cursor
+func (pq *ProductQuery) Seek(cursor *Cursor) *ProductQuery {
+	var apply func(positions []*CursorPosition) Predicate
 
-// NewPagination creates a new pagination
-func NewPagination() *Pagination {
-	return &Pagination{}
-}
+	apply = func(positions []*CursorPosition) Predicate {
+		var (
+			predicate        Predicate = func(*sql.Selector) {}
+			predicateCompare Predicate = func(*sql.Selector) {}
+			predicateEqual   Predicate = func(*sql.Selector) {}
+		)
 
-// WithLimit returns the pagination with given limit
-func (pg Pagination) WithLimit(limit int) *Pagination {
-	pg.Limit = limit
-	return &pg
-}
+		if len(positions) == 0 {
+			return predicate
+		}
 
-// WithCursor set the pagination cursor
-func (pg Pagination) WithCursor(cursor *Cursor) *Pagination {
-	pg.Predicate = pg.apply(cursor.positions)
+		position := positions[0]
+
+		if position.Value != nil {
+			predicateEqual = eq(position.Column, position.Value)
+
+			switch position.Direction {
+			case "+":
+				predicateCompare = gt(position.Column, position.Value)
+			case "-":
+				predicateCompare = lt(position.Column, position.Value)
+			default:
+				predicateCompare = gt(position.Column, position.Value)
+			}
+		}
+
+		positions = positions[1:]
+		predicate = predicateCompare
+
+		if len(positions) > 0 {
+			predicate = or(predicateCompare,
+				and(predicateEqual, apply(positions)))
+		}
+
+		return predicate
+	}
+
+	pq.predicates = append(pq.predicates, apply(cursor.positions))
 
 	for _, position := range cursor.positions {
 		switch position.Direction {
 		case "+":
-			pg.Order = append(pg.Order, asc(position.Column))
+			pq.order = append(pq.order, asc(position.Column))
 		case "-":
-			pg.Order = append(pg.Order, desc(position.Column))
+			pq.order = append(pq.order, desc(position.Column))
 		}
-	}
-
-	return &pg
-}
-
-func (pg *Pagination) apply(positions []*CursorPosition) Predicate {
-	var (
-		predicate        Predicate = func(*sql.Selector) {}
-		predicateCompare Predicate = func(*sql.Selector) {}
-		predicateEqual   Predicate = func(*sql.Selector) {}
-	)
-
-	if len(positions) == 0 {
-		return predicate
-	}
-
-	position := positions[0]
-
-	if position.Value != nil {
-		predicateEqual = eq(position.Column, position.Value)
-
-		switch position.Direction {
-		case "+":
-			predicateCompare = gt(position.Column, position.Value)
-		case "-":
-			predicateCompare = lt(position.Column, position.Value)
-		default:
-			predicateCompare = gt(position.Column, position.Value)
-		}
-	}
-
-	positions = positions[1:]
-	predicate = predicateCompare
-
-	if len(positions) > 0 {
-		predicate = or(predicateCompare,
-			and(predicateEqual, pg.apply(positions)))
-	}
-
-	return predicate
-}
-
-func (pq *ProductQuery) Paginate(page *Pagination) *ProductQuery {
-	pq = pq.Where(page.Predicate)
-	pq = pq.Limit(page.Limit)
-
-	for _, predicate := range page.Order {
-		pq = pq.Order(predicate)
 	}
 
 	return pq
 }
+
 
 func eq(field string, value interface{}) Predicate {
 	return func(s *sql.Selector) {

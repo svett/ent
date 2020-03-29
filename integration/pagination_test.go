@@ -59,8 +59,8 @@ var _ = Describe("Pagination", func() {
 			create("Hat")
 		})
 
-		query := func(page *ent.Pagination) []*ent.Product {
-			query := client.Product.Query().Paginate(page)
+		query := func(cursor *ent.Cursor, limit int) []*ent.Product {
+			query := client.Product.Query().Seek(cursor).Limit(limit)
 
 			records, err := query.All(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -80,67 +80,47 @@ var _ = Describe("Pagination", func() {
 
 			spew.Dump(cursor)
 
-			// navigate to page
-			pagination := ent.NewPagination().
-				WithCursor(cursor).
-				WithLimit(2)
-
 			// fetch first page
-			records := query(pagination)
+			records := query(cursor, 2)
 			Expect(records).To(HaveLen(2))
 			Expect(records[0].Title).To(Equal("Cap"))
 			Expect(records[1].Title).To(Equal("Hat"))
 
 			// fetch next page
 			cursor = cursor.Next(records)
-			pagination = ent.NewPagination().
-				WithCursor(cursor).
-				WithLimit(2)
 
-			records = query(pagination)
+			records = query(cursor, 2)
 			Expect(records).To(HaveLen(2))
 			Expect(records[0].Title).To(Equal("Hat"))
 			Expect(records[1].Title).To(Equal("Hat"))
 
 			// fetch next page
 			cursor = cursor.Next(records)
-			pagination = ent.NewPagination().
-				WithCursor(cursor).
-				WithLimit(2)
 
-			records = query(pagination)
+			records = query(cursor, 2)
 			Expect(records).To(HaveLen(2))
 			Expect(records[0].Title).To(Equal("Jackets"))
 			Expect(records[1].Title).To(Equal("Pants"))
 
 			// fetch next page
 			cursor = cursor.Next(records)
-			pagination = ent.NewPagination().
-				WithCursor(cursor).
-				WithLimit(2)
 
-			records = query(pagination)
+			records = query(cursor, 2)
 			Expect(records).To(HaveLen(2))
 			Expect(records[0].Title).To(Equal("Pants"))
 			Expect(records[1].Title).To(Equal("T-Shirt"))
 
 			// fetch next page
 			cursor = cursor.Next(records)
-			pagination = ent.NewPagination().
-				WithCursor(cursor).
-				WithLimit(2)
 
-			records = query(pagination)
+			records = query(cursor, 2)
 			Expect(records).To(HaveLen(2))
 			Expect(records[0].Title).To(Equal("T-Shirt"))
 			Expect(records[1].Title).To(Equal("Trousers"))
 
 			cursor = cursor.Next(records)
-			pagination = ent.NewPagination().
-				WithCursor(cursor).
-				WithLimit(2)
 
-			records = query(pagination)
+			records = query(cursor, 2)
 			Expect(records).To(HaveLen(0))
 
 			cursor = cursor.Next(records)
