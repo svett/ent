@@ -6,14 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/jmoiron/sqlx/reflectx"
 )
-
-var mapper = reflectx.NewMapper("json")
 
 // Predicate creates a predicate
 type Predicate = func(s *sql.Selector)
@@ -114,26 +110,33 @@ func (c *ProductCursor) String() string {
 }
 
 // Next returns the next cursor
-func (c *ProductCursor) Next(input interface{}) *ProductCursor {
+func (c *ProductCursor) Next(input []*Product) *ProductCursor {
 	var (
-		next   = ProductCursor{}
-		source = reflect.ValueOf(input)
+		next  = ProductCursor{}
+		count = len(input)
 	)
 
-	//TODO: do not use reflection
-	if source.Type().Kind() == reflect.Slice {
-		if source.Len() == 0 {
-			return &next
-		}
-
-		source = source.Index(source.Len() - 1)
+	if count == 0 {
+		return &next
 	}
+
+	item := input[count-1]
 
 	for _, position := range c.positions {
 		index := &CursorPosition{
 			Column:    position.Column,
 			Direction: position.Direction,
-			Value:     mapper.FieldByName(source, position.Column).Interface(),
+		}
+
+		switch position.Column {
+		case "id":
+			index.Value = item.ID
+		case "title":
+			index.Value = item.Title
+		case "created_at":
+			index.Value = item.CreatedAt
+		case "updated_at":
+			index.Value = item.UpdatedAt
 		}
 
 		next.positions = append(next.positions, index)

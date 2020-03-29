@@ -10,10 +10,7 @@ import (
 	"strings"
 
 	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/jmoiron/sqlx/reflectx"
 )
-
-var mapper = reflectx.NewMapper("json")
 
 // Predicate creates a predicate
 type Predicate = func(s *sql.Selector)
@@ -119,27 +116,34 @@ func (c *{{ $name }}Cursor) String() string {
 }
 
 // Next returns the next cursor
-func (c *{{ $name }}Cursor) Next(input interface{}) *{{ $name }}Cursor {
+func (c *{{ $name }}Cursor) Next(input []*{{ $name }}) *{{ $name }}Cursor {
 	var (
-		next   = {{ $name }}Cursor{}
-		source = reflect.ValueOf(input)
+		next  = {{ $name }}Cursor{}
+		count = len(input)
 	)
 
-	//TODO: do not use reflection
-	if source.Type().Kind() == reflect.Slice {
-		if source.Len() == 0 {
-			return &next
-		}
-
-		source = source.Index(source.Len() - 1)
+	if count == 0 {
+		return &next
 	}
+
+	item := input[count - 1]
 
 	for _, position := range c.positions {
 		index := &CursorPosition{
 			Column:    position.Column,
 			Direction: position.Direction,
-			Value:     mapper.FieldByName(source, position.Column).Interface(),
 		}
+
+		{{ with $n.Fields }}
+		  switch position.Column {
+			  case "{{ $n.ID.Name }}":
+				index.Value = item.{{ pascal $n.ID.Name }}
+			{{- range $i, $f := $n.Fields }}
+			  case "{{ $f.Name }}":
+				index.Value = item.{{ pascal $f.Name }}
+			{{- end }}
+		  }
+		{{ end }}
 
 		next.positions = append(next.positions, index)
 	}
